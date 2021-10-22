@@ -18,9 +18,20 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger(__name__)
 #Read env variables
 TOKEN = os.environ['TOKEN']
-baseURL = os.environ['baseURL']
+baseURL = os.environ['baseURL'] 
 affiliate_tag = os.environ['affiliate_tag']
 HEROKU_URL = os.environ['HEROKU_URL']
+
+# baseURL should have https and www before amazon, but we also want to detect URL without it
+# Ensure that we can detect all but the baseURL has the correct https URL
+if baseURL.startswith("https://www."):
+    searchURL = baseURL[12:]
+elif baseURL.startswith("http://www."):
+    searchURL = baseURL[11:]
+    baseURL = "https://www."+searchURL
+else:
+    searchURL = baseURL
+    baseURL = "https://www."+baseURL
 
 # Define a few command handlers. These usually take the two arguments update and
 # context. Error handlers also receive the raised TelegramError object in error.
@@ -45,7 +56,7 @@ def filterText(update, context):
     start = msg.find("amzn.to")
     if start!=-1:
         msg = unshortURL(msg[start:].split()[0])
-    start = msg.find(baseURL)
+    start = msg.find(searchURL)
     if start != -1:
         #Regular expression to extract the product code. Adjust if different URL schemes are found.
         m = re.search(r'(?:dp\/[\w]*)|(?:gp\/product\/[\w]*)',msg[start:].split(" ")[0])
