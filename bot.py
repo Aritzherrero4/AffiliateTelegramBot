@@ -44,8 +44,7 @@ def newReferURL(pcode):
 
 #Expand shorted URL (amzn.to links) to normal Amazon URL
 def unshortURL(url):
-    session = requests.Session()  # so connections are recycled
-    resp = session.head("https://"+url, allow_redirects=True)
+    resp = requests.get("https://"+url)
     return resp.url
 
 #Filter the msg text to extract the URL if found. Then send the corresponding reply
@@ -54,6 +53,9 @@ def filterText(update, context):
     pCode=""
     msg = update.message.text
     start = msg.find("amzn.to")
+    if start!=-1:
+        msg = unshortURL(msg[start:].split()[0])
+    start = msg.find("amzn.eu")
     if start!=-1:
         msg = unshortURL(msg[start:].split()[0])
     start = msg.find(searchURL)
