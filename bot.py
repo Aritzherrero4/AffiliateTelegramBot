@@ -20,7 +20,6 @@ logger = logging.getLogger(__name__)
 TOKEN = os.environ['TOKEN']
 baseURL = os.environ['baseURL'] 
 affiliate_tag = os.environ['affiliate_tag']
-HEROKU_URL = os.environ['HEROKU_URL']
 
 # baseURL should have https and www before amazon, but we also want to detect URL without it
 # Ensure that we can detect all but the baseURL has the correct https URL
@@ -79,12 +78,8 @@ def main():
     dp.add_handler(MessageHandler(    
                    Filters.text & (Filters.entity(MessageEntity.URL) |
                                     Filters.entity(MessageEntity.TEXT_LINK)),filterText))
-    # Start the Bot
-    updater.start_webhook(listen="0.0.0.0",
-                          port=int(PORT),
-                          url_path=TOKEN)
-    updater.bot.setWebhook(HEROKU_URL + TOKEN)
-
+    # Start the BotRun the bot in polling mode for local / no webhook use
+    updater.start_polling(poll_interval=20, timeout=1) 
     # Run the bot until you press Ctrl-C or the process receives SIGINT,
     # SIGTERM or SIGABRT. This should be used most of the time, since
     # start_polling() is non-blocking and will stop the bot gracefully.
