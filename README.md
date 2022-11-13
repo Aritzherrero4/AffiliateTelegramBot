@@ -24,21 +24,32 @@ There are 4 required env variables that must be configured in Heroku to work.
 
 * ```baseURL```: The base URL used for the link. For example "amazon.es" for the Spanish Amazon website products.
 
-* ```HEROKU_URL```: The URL of the Heroku app. This can be found in the app settings.
-
 * ```TOKEN```: The API Token of the telegram bot. This can be obtained after creating a bot with botFather.
 
 ## How to create your own bot
 
-If you want to create your own bot, fork this repo and use it as your source repository on Heroku. To do that, connect GitHub to Heroku and select the forked repo.
+If you want to create your own bot, fork or clone this repo and configure it to run locally. 
+For this steps to work, you will need git, python3 and pip installed. Other dependencies might be necessary depending on your operating system.
+
+First, you need to clone the repo with the bot source code.
+``` 
+git clone -b local https://github.com/Aritzherrero4/AffiliateTelegramBot.git
+```
+
+Then, install the python requirements.
+
+```
+cd AffiliateTelegramBot
+pip install -r requirements.txt
+```
+
+Set the environment variables correctly and run the bot.
+```
+python3 bot.py
+```
+NOTE: To keep the bot running, the python program must be running. This configuration is useful for a server like set-up. 
 
 ## Useful links
-
-### Heroku
-
-* [Heroku: Getting started python](https://devcenter.heroku.com/articles/getting-started-with-python)
-* [Configuration variables heroku](https://devcenter.heroku.com/articles/config-vars#managing-config-vars)
-* [Heroku: Deploying with git](https://devcenter.heroku.com/articles/git)
 
 ### Telegram bots
 
