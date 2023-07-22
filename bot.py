@@ -1,15 +1,10 @@
 # bot.py
-import telegram as tg
-from telegram.ext import Updater
 import logging
-from telegram.ext import CommandHandler
-from telegram.ext import MessageHandler, Filters
-from telegram import MessageEntity
+from telegram import Update, MessageEntity
+from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 import re
 import requests
 import os
-
-PORT = int(os.environ.get('PORT', 5000))
 
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -34,8 +29,8 @@ else:
 
 # Define a few command handlers. These usually take the two arguments update and
 # context. Error handlers also receive the raised TelegramError object in error.
-def start(update, context):
-    context.bot.send_message(chat_id=update.effective_chat.id, text="Hola! Este bot responde a los enlaces de amazon añadiendo un codigo de afiliado!")
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="Hola! Este bot responde a los enlaces de amazon añadiendo un codigo de afiliado!")
 
 # Create the new URL with the refer tag
 def newReferURL(pcode):
@@ -48,7 +43,7 @@ def unshortURL(url):
 
 #Filter the msg text to extract the URL if found. Then send the corresponding reply
 # with the new affiliate URL
-def filterText(update, context):
+async def filterText(update: Update, context: ContextTypes.DEFAULT_TYPE):
     pCode=""
     msg = update.message.text
     start = msg.find("amzn.to")
@@ -63,27 +58,21 @@ def filterText(update, context):
         m = re.search(r'(?:dp\/[\w]*)|(?:gp\/product\/[\w]*)',msg[start:].split(" ")[0])
         if m != None:
             pCode = m.group(0)
-        context.bot.send_message(chat_id=update.message.chat_id,reply_to_message_id=update.message.message_id, text=newReferURL(pCode))
+        await context.bot.sendMessage(chat_id=update.message.chat_id, reply_to_message_id=update.effective_message.id, text=newReferURL(pCode))
 
 def main():
     """Start the bot."""
-    # Create the Updater and pass it your bot's token.
-    updater = Updater(TOKEN, use_context=True)
+    # Create the Application and pass it your bot's token.
+    application = Application.builder().token(TOKEN).build()
 
-    # Get the dispatcher to register handlers
-    dp = updater.dispatcher
+    # Welcome message handler
+    application.add_handler(CommandHandler("start", start))
 
-    # on different commands - answer in Telegram
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(MessageHandler(    
-                   Filters.text & (Filters.entity(MessageEntity.URL) |
-                                    Filters.entity(MessageEntity.TEXT_LINK)),filterText))
-    # Start the BotRun the bot in polling mode for local / no webhook use
-    updater.start_polling(poll_interval=20, timeout=1) 
-    # Run the bot until you press Ctrl-C or the process receives SIGINT,
-    # SIGTERM or SIGABRT. This should be used most of the time, since
-    # start_polling() is non-blocking and will stop the bot gracefully.
-    updater.idle()
+    # URL - LINK message handler -- Process URLs
+    application.add_handler(MessageHandler(filters.TEXT & (filters.Entity(MessageEntity.URL) | filters.Entity(MessageEntity.TEXT_LINK)), filterText))
+
+    # Run the bot until the user presses Ctrl-C
+    application.run_polling(allowed_updates=Update.ALL_TYPES, poll_interval=10, timeout=1)
 
 if __name__ == '__main__':
     main()
