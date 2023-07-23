@@ -105,16 +105,16 @@ async def filterText(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
         # Create and send the new url with the affiliate tag
         new_url = create_affiliate_url(pCode)
-        logger.info(f"Filtered link: {msg} -> {new_url}" if m != None else f"Product code not found: {msg} -> {new_url}")
-
-        if DEV_CHAT_ID is not None and msg != base_url:
-            await context.bot.sendMessage(chat_id=DEV_CHAT_ID, text=f'Product code not found! Original URL: {msg} ')
+        if m != None:
+            logger.info(f"Filtered link: {msg} -> {new_url}")  
+        else:
+            logger.warning(f"Product code not found: {msg} -> {new_url}")
+            if DEV_CHAT_ID != None and msg != base_url:
+                await context.bot.sendMessage(chat_id=DEV_CHAT_ID, text=f'Product code not found! Original URL: {msg} ')
 
         await context.bot.sendMessage(chat_id=update.message.chat_id, reply_to_message_id=update.effective_message.id, text=new_url)
     else:
         logger.warning(f'URL not filtered: {msg}')
-        if DEV_CHAT_ID is not None:
-            await context.bot.sendMessage(chat_id=DEV_CHAT_ID, text=f'URL not filtered: {msg}')
 
 def main():
     """Start the bot."""
