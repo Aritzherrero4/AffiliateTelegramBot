@@ -17,6 +17,7 @@ logging.getLogger('httpx').setLevel(logging.WARNING)
 
 # Read env variables
 TOKEN = os.environ['TOKEN']
+DEV_CHAT_ID = os.environ['DEV_CHAT_ID'] if 'DEV_CHAT_ID' in os.environ else None
 search_url = os.environ['search_url'] 
 affiliate_tag = os.environ['affiliate_tag']
 
@@ -40,7 +41,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         update: The incoming update.
         context: The context of the bot.
     """
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="Hola! Este bot responde a los enlaces de amazon añadiendo un codigo de afiliado!")
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Hola! Este bot responde a los enlaces de amazon añadiendo un codigo de afiliado!")
 
 def create_affiliate_url(product_code: str) -> str:
     """Create a new URL with the the product code and the affiliate tag.
@@ -105,9 +106,15 @@ async def filterText(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         # Create and send the new url with the affiliate tag
         new_url = create_affiliate_url(pCode)
         logger.info(f"Filtered link: {msg} -> {new_url}" if m != None else f"Product code not found: {msg} -> {new_url}")
+
+        if DEV_CHAT_ID is not None and msg != base_url:
+            await context.bot.sendMessage(chat_id=DEV_CHAT_ID, text=f'Product code not found! Original URL: {msg} ')
+
         await context.bot.sendMessage(chat_id=update.message.chat_id, reply_to_message_id=update.effective_message.id, text=new_url)
     else:
         logger.warning(f'URL not filtered: {msg}')
+        if DEV_CHAT_ID is not None:
+            await context.bot.sendMessage(chat_id=DEV_CHAT_ID, text=f'URL not filtered: {msg}')
 
 def main():
     """Start the bot."""
