@@ -13,6 +13,7 @@ You set the base URL using a env variable. this bot can automatically detect the
 
 * ```.../gp/product/PRODUCTCODE/...```
 * ```.../dp/PRODUCTCODE/...```
+* ```.../gp/aw/d/PRODUCTCODE```
 
 If you find different URS schemes, they can be added to the regular expression and will work.
 
@@ -22,7 +23,7 @@ There are 4 required env variables that must be configured in Heroku to work.
 
 * ```affiliate_tag``` : The affiliate tag you want to use for the generated URL.
 
-* ```baseURL```: The base URL used for the link. For example "amazon.es" for the Spanish Amazon website products.
+* ```search_url```: The base URL used for the link. For example "amazon.es" for the Spanish Amazon website products. The URL must be provided without `http`/`https` and without `www.`
 
 * ```TOKEN```: The API Token of the telegram bot. This can be obtained after creating a bot with botFather.
 
@@ -33,7 +34,7 @@ For this steps to work, you will need git, python3 and pip installed. Other depe
 
 First, you need to clone the repo with the bot source code.
 ``` 
-git clone -b local https://github.com/Aritzherrero4/AffiliateTelegramBot.git
+git clone https://github.com/Aritzherrero4/AffiliateTelegramBot.git
 ```
 
 Then, install the python requirements.
@@ -47,7 +48,7 @@ Set the environment variables correctly and run the bot.
 ```
 python3 bot.py
 ```
-NOTE: To keep the bot running, the python program must be running. This configuration is useful for a server like set-up. 
+NOTE: To keep the bot running, the python program must be running. This configuration is useful for an always on server like set-up. 
 
 ## Useful links
 
@@ -55,3 +56,4 @@ NOTE: To keep the bot running, the python program must be running. This configur
 
 * [Telegram Bot introduction](https://core.telegram.org/bots)
 * [Telegram Bot API](https://core.telegram.org/bots/api)
+* [Python Telegram Bot](https://python-telegram-bot.org/) 

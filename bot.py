@@ -1,31 +1,35 @@
 # bot.py
+import re
+import os
 import logging
+import requests
 from telegram import Update, MessageEntity
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
-import re
-import requests
-import os
 
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 
-logger = logging.getLogger(__name__)
+# Set the loglevel of the telegram module to warning
+logger = logging.getLogger("Affiliate_telegram_bot")
+logging.getLogger('telegram').setLevel(logging.WARNING)
+logging.getLogger('httpx').setLevel(logging.WARNING)
+
 #Read env variables
 TOKEN = os.environ['TOKEN']
-baseURL = os.environ['baseURL'] 
+search_url = os.environ['search_url'] 
 affiliate_tag = os.environ['affiliate_tag']
 
-# baseURL should have https and www before amazon, but we also want to detect URL without it
-# Ensure that we can detect all but the baseURL has the correct https URL
-if baseURL.startswith("https://www."):
-    searchURL = baseURL[12:]
-elif baseURL.startswith("http://www."):
-    searchURL = baseURL[11:]
-    baseURL = "https://www."+searchURL
-else:
-    searchURL = baseURL
-    baseURL = "https://www."+baseURL
+#Filtered URL schemes: dp/ASIN, gp/product/ASIN and gp/aw/d/ASIN
+PRODUCT_PATTERN_CODE = re.compile(r'(?:dp\/[\w]*)|(?:gp\/product\/[\w]*)|(?:gp\/aw\/d\/[\w]*)')
+
+if (not search_url.startswith("amazon.")):
+    logger.error("Incorrect search URL. The URL must start with 'amazon.' followed by the country domain.")
+if (not search_url.endswith("/")):
+    search_url = search_url + "/"
+base_url = "https://www."+search_url
+
+logger.info(f'Telegram bot started correctly with the affiliate_tag: {affiliate_tag}')
 
 # Define a few command handlers. These usually take the two arguments update and
 # context. Error handlers also receive the raised TelegramError object in error.
@@ -33,32 +37,46 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text="Hola! Este bot responde a los enlaces de amazon añadiendo un codigo de afiliado!")
 
 # Create the new URL with the refer tag
-def newReferURL(pcode):
-    return baseURL+pcode+"?tag="+affiliate_tag
+def create_affiliate_url(product_code: str) -> str:
+    return base_url+product_code+"?tag="+affiliate_tag
 
-#Expand shorted URL (amzn.to links) to normal Amazon URL
-def unshortURL(url):
-    resp = requests.get("https://"+url)
-    return resp.url
-
+#Expand shortened URL (amzn.to or amzn.eu links) to normal Amazon URL
+def expand_short_url(url: str) -> str:
+    try:
+        response = requests.get("https://"+url)
+        return response.url
+    except requests.exceptions.RequestException:
+        logger.error(f"Failed to expand URL: {url}")
+        return ""  
 #Filter the msg text to extract the URL if found. Then send the corresponding reply
 # with the new affiliate URL
 async def filterText(update: Update, context: ContextTypes.DEFAULT_TYPE):
     pCode=""
     msg = update.message.text
-    start = msg.find("amzn.to")
-    if start!=-1:
-        msg = unshortURL(msg[start:].split()[0])
-    start = msg.find("amzn.eu")
-    if start!=-1:
-        msg = unshortURL(msg[start:].split()[0])
-    start = msg.find(searchURL)
-    if start != -1:
+    short_url_list = ["amzn.to", "amzn.eu"]
+    for url in short_url_list:
+        short_start_index = msg.find(url)
+        if short_start_index!=-1:
+            msg = expand_short_url(msg[short_start_index:].split()[0])
+            break
+    
+    if (msg.find(affiliate_tag)!=-1):
+        logger.info(f"The affiliate tag was already in the URL: {msg}")
+        await context.bot.sendMessage(chat_id=update.message.chat_id, reply_to_message_id=update.effective_message.id, text=msg)
+        return
+    
+    start_index = msg.find(search_url)
+
+    if start_index != -1:
         #Regular expression to extract the product code. Adjust if different URL schemes are found.
-        m = re.search(r'(?:dp\/[\w]*)|(?:gp\/product\/[\w]*)',msg[start:].split(" ")[0])
-        if m != None:
-            pCode = m.group(0)
-        await context.bot.sendMessage(chat_id=update.message.chat_id, reply_to_message_id=update.effective_message.id, text=newReferURL(pCode))
+        m = re.search(PRODUCT_PATTERN_CODE,msg[start_index:].split(" ")[0]) 
+        pCode = m.group(0) if m != None else ""
+
+        new_url = create_affiliate_url(pCode)
+        logger.info(f"Filtered link: {msg} -> {new_url}" if m != None else f"Product code not found: {msg} -> {new_url}")
+        await context.bot.sendMessage(chat_id=update.message.chat_id, reply_to_message_id=update.effective_message.id, text=new_url)
+    else:
+        logger.warning(f'URL not filtered: {msg}')
 
 def main():
     """Start the bot."""
